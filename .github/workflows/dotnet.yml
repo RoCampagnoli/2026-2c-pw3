@@ -16,9 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Clase 2
-            solution: Tareas/2026_2C_Clase2_Practica/2026_2C_Clase2.sln
-
+        
           - name: Clase 4 MVC - Tarea
             solution: Tareas/Clase4-MVC-Practica/ClaseMVC.slnx
 
