@@ -15,6 +15,13 @@
 <hr />
 
 
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success" style="color:red">
+        @TempData["Alerta"]
+    </div>
+}
+
 <table class="table">
     <thead>
         <tr>

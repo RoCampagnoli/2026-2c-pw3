@@ -17,7 +17,15 @@ public class AnimalesController : Controller
     public IActionResult Index()
     {
         var animales = _animalesServicios.Listar();
+        if (new Random().NextDouble() < 0.3)
+        {
+            var random = new Random();
+            var animalAleatorio = animales[random.Next(animales.Count)];
+            var raza = animalAleatorio.Raza; 
+            var porcentaje = random.Next(1, 50);
 
+            TempData["Alerta"] = $"Durante el último año la raza {raza} redujo su población en {porcentaje}%";
+        }
         return View(animales);
     }
 
@@ -25,15 +33,18 @@ public class AnimalesController : Controller
     [HttpGet]
     public IActionResult Agregar()
     {
+        ViewBag.NacimientosUltimoMes = new Random().Next(0, 20);
         return View(new Animal());
     }
 
     [HttpPost]
     public IActionResult Agregar(Animal animal)
     {
-        if (!ModelState.IsValid)//si el form es invalido, no te vayas, quedate en la vista
+        if (!ModelState.IsValid)
+        {
+            ViewBag.NacimientosUltimoMes = new Random().Next(0, 20);
             return View(animal);
-
+        }
         _animalesServicios.Agregar(animal);
         return RedirectToAction("Index");
     }
@@ -57,6 +68,7 @@ public class AnimalesController : Controller
         //datos actualizados de una api de cuantos ejemplares quedan a nivel mundial
 
         ViewBag.CantidadEjemplares = new Random().Next(2500);
+        ViewBag.NacimientosUltimoMes = new Random().Next(0, 20);
         //ViewData["CantidadEjemplares"] = new Random().Next(2500);
         //TempData["CantidadEjemplares"] = new Random().Next(2500);
 
@@ -69,10 +81,12 @@ public class AnimalesController : Controller
         var animalDB = _animalesServicios.ObtenerPorId(animal.Id);
         if (animalDB == null)
             return NotFound();
-
+        if (ModelState.IsValid) { 
         _animalesServicios.Actualizar(animal);
-
         return RedirectToAction("Index");
+        }
+        ViewBag.NacimientosUltimoMes = new Random().Next(0, 20);
+        return View(animal);
     }
 
     //Eliminar
