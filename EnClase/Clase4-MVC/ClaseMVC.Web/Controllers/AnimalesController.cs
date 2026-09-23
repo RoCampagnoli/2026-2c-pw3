@@ -31,7 +31,7 @@ public class AnimalesController : Controller
     [HttpPost]
     public IActionResult Agregar(Animal animal)
     {
-        if (!ModelState.IsValid)
+        if (!ModelState.IsValid)//si el form es invalido, no te vayas, quedate en la vista
             return View(animal);
 
         _animalesServicios.Agregar(animal);
