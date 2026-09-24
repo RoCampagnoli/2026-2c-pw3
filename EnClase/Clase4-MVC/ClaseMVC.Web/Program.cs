@@ -5,6 +5,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Session support (in-memory for demo)
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
+// Register HTTP context accessor and recientes service
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ClaseMVC.Web.Services.IRecientesService, ClaseMVC.Web.Services.RecientesService>();
+
 builder.Services.AddSingleton<IAnimalesServicios, AnimalesServicios>();
 
 var app = builder.Build();
@@ -20,6 +33,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseSession();
 
 app.UseAuthorization();
 

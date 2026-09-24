@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics;
+using System.Linq;
 using ClaseMVC.Entidades;
 using ClaseMVC.Logica;
 using ClaseMVC.Web.Models;
+using ClaseMVC.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClaseMVC.Web.Controllers;
@@ -9,9 +11,12 @@ namespace ClaseMVC.Web.Controllers;
 public class AnimalesController : Controller
 {
     private readonly IAnimalesServicios _animalesServicios;
-    public AnimalesController(IAnimalesServicios animalesServicios)
+    private readonly IRecientesService _recientesService;
+
+    public AnimalesController(IAnimalesServicios animalesServicios, IRecientesService recientesService)
     {
         _animalesServicios = animalesServicios;
+        _recientesService = recientesService;
     }
 
     public IActionResult Index()
@@ -26,7 +31,20 @@ public class AnimalesController : Controller
 
             TempData["Alerta"] = $"Durante el último año la raza {raza} redujo su población en {porcentaje}%";
         }
-        return View(animales);
+        // map to viewmodels
+        var vms = animales.Select(a => a.ToViewModel()).ToList();
+
+        // Load recently viewed from session (list of ids) via service
+        var recientesIds = _recientesService.ObtenerRecientes();
+        var recientes = recientesIds
+            .Select(id => _animalesServicios.ObtenerPorId(id))
+            .Where(a => a != null)
+            .Select(a => a!.ToViewModel())
+            .ToList();
+
+        ViewBag.Recientes = recientes;
+
+        return View(vms);
     }
 
     //Agregar
@@ -34,18 +52,22 @@ public class AnimalesController : Controller
     public IActionResult Agregar()
     {
         ViewBag.NacimientosUltimoMes = new Random().Next(0, 20);
-        return View(new Animal());
+        var vm = new AnimalViewModel { NacimientosUltimoMes = (int)ViewBag.NacimientosUltimoMes };
+        return View(vm);
     }
 
     [HttpPost]
-    public IActionResult Agregar(Animal animal)
+    public IActionResult Agregar(AnimalViewModel animal)
     {
         if (!ModelState.IsValid)
         {
             ViewBag.NacimientosUltimoMes = new Random().Next(0, 20);
+            animal.NacimientosUltimoMes = (int)ViewBag.NacimientosUltimoMes;
             return View(animal);
         }
-        _animalesServicios.Agregar(animal);
+
+        var entidad = animal.ToEntity();
+        _animalesServicios.Agregar(entidad);
         return RedirectToAction("Index");
     }
 
@@ -72,20 +94,32 @@ public class AnimalesController : Controller
         //ViewData["CantidadEjemplares"] = new Random().Next(2500);
         //TempData["CantidadEjemplares"] = new Random().Next(2500);
 
-        return View(animal);
+        var vm = animal.ToViewModel();
+        vm.CantidadEjemplares = (int)ViewBag.CantidadEjemplares;
+        vm.NacimientosUltimoMes = (int)ViewBag.NacimientosUltimoMes;
+
+        // Update recientes via service
+        _recientesService.AgregarReciente(id);
+
+        return View(vm);
     }
 
     [HttpPost]
-    public IActionResult Editar(Animal animal)
+    public IActionResult Editar(AnimalViewModel animal)
     {
         var animalDB = _animalesServicios.ObtenerPorId(animal.Id);
         if (animalDB == null)
             return NotFound();
-        if (ModelState.IsValid) { 
-        _animalesServicios.Actualizar(animal);
-        return RedirectToAction("Index");
+
+        if (ModelState.IsValid)
+        {
+            var entidad = animal.ToEntity();
+            _animalesServicios.Actualizar(entidad);
+            return RedirectToAction("Index");
         }
+
         ViewBag.NacimientosUltimoMes = new Random().Next(0, 20);
+        animal.NacimientosUltimoMes = (int)ViewBag.NacimientosUltimoMes;
         return View(animal);
     }
 
